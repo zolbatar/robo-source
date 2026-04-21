@@ -1,5 +1,24 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+# Features
+
+## Personas
+
+### Engineer
+
+"High torque", "Vision pipeline", "Embedded control"
+
+### Procurement
+
+"Low stock",
+"Short lead time",
+"Popular in UK",
+"Popular in EU"
+
+### Field
+
+"Field-service ready", "Factory-ready", "Heavy-duty"
+
 ## Getting Started
 
 First, run the development server:

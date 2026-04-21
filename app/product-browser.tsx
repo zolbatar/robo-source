@@ -12,6 +12,7 @@ import {getSelectionDetail} from "@/app/selection";
 import {paginationControl} from "@/app/pagination";
 import {getProductsList} from "@/app/products-list";
 import {search} from "@/app/search";
+import {selectPersona} from "@/app/persona";
 
 type ProductBrowserProps = {
     products: Product[];
@@ -24,6 +25,10 @@ type ProductBrowserProps = {
     endIndex: number;
     previousPageHref: string | null;
     nextPageHref: string | null;
+    selectedLocale: "US" | "UK" | "EU";
+    selectedLocaleLabel: string;
+    selectedPersona: "engineer" | "procurement" | "field";
+    selectedPersonaLabel: string;
 };
 
 export default function ProductBrowser({
@@ -37,28 +42,24 @@ export default function ProductBrowser({
                                            endIndex,
                                            previousPageHref,
                                            nextPageHref,
+                                           selectedLocale,
+                                           selectedLocaleLabel,
+                                           selectedPersona,
+                                           selectedPersonaLabel,
                                        }: ProductBrowserProps) {
     const [selectedProductId, setSelectedProductId] = useState(
         products[0]?.id ?? null,
     );
     const [localisationKey, setLocalisationKey] = useState<LocalisationKey>(
         () => {
-            if (typeof window === "undefined") {
-                return "UK";
-            }
-
-            const locale = window.navigator.language.toLowerCase();
-            const region = locale.split("-")[1]?.toUpperCase();
-
-            switch (region) {
-                case "GB":
-                    return "UK";
-                case "JP":
-                    return "Japan";
+            switch (selectedLocale) {
                 case "US":
                     return "US";
-                default:
+                case "EU":
                     return "EU";
+                case "UK":
+                default:
+                    return "UK";
             }
         },
     );
@@ -75,12 +76,19 @@ export default function ProductBrowser({
 
     return (
         <div className="min-h-screen bg-zinc-50 text-zinc-950 dark:bg-zinc-950 dark:text-zinc-50">
+            {false && <div className="flex justify-center">
+                {selectPersona(selectedPersona, query, selectedCategory, selectedLocale)}
+            </div>}
+
             <main className="mx-auto flex min-h-screen w-full max-w-400 flex-col px-6 py-6 lg:px-8">
                 <section className="mt-6 grid gap-6 xl:grid-cols-[280px_minmax(0,1fr)_320px]">
                     <aside
                         className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+
                         {search(selectedCategory, query)}
+
                         <div className="mt-6 flex flex-col gap-2"></div>
+
                         {getFilters(selectedCategory, query)}
                     </aside>
 
@@ -96,8 +104,8 @@ export default function ProductBrowser({
                                 </div>
                                 <h2 className="mt-1 text-xl font-semibold">
                                     {selectedCategory
-                                        ? `${selectedCategory} recommended for procurement teams`
-                                        : "Recommended for procurement teams"}
+                                        ? `${selectedCategory} recommended for ${selectedPersonaLabel.toLowerCase()} teams in ${selectedLocale}`
+                                        : `Recommended for ${selectedPersonaLabel.toLowerCase()} teams in ${selectedLocale}`}
                                 </h2>
                             </div>
 
@@ -123,10 +131,10 @@ export default function ProductBrowser({
                                 <div
                                     className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950">
                                     <div className="text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-                                        Page
+                                        Locale / persona
                                     </div>
                                     <div className="mt-1 text-sm font-medium">
-                                        {safePage} of {totalPages}
+                                        {selectedLocale} · {selectedPersonaLabel}
                                     </div>
                                 </div>
                             </div>
@@ -141,7 +149,7 @@ export default function ProductBrowser({
 
                             <label className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400">
                                 <span className="whitespace-nowrap">
-                                    Country / region
+                                    {selectedLocaleLabel}
                                 </span>
                                 <select
                                     value={localisationKey}
@@ -151,7 +159,7 @@ export default function ProductBrowser({
                                                 .value as LocalisationKey,
                                         )
                                     }
-                                    className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50"
+                                    className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 opacity-60 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50"
                                 >
                                     {localisationOptions.map(
                                         ({key, value}) => (
@@ -162,6 +170,9 @@ export default function ProductBrowser({
                                     )}
                                 </select>
                             </label>
+                            <div className="text-sm text-zinc-500 dark:text-zinc-400">
+                                Persona: {selectedPersonaLabel}
+                            </div>
                         </div>
 
                         {paginationControl(
