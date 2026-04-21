@@ -167,7 +167,10 @@ function generateRegionStock(raw: RawProduct): string {
     const seed = stringSeed(raw.ProductID);
     const regions = ["UK warehouse", "EU warehouse", "US warehouse"];
     const region = regions[seed % regions.length];
-    const localStock = Math.max(5, Math.floor(raw.InStock * (((seed % 20) + 5) / 100)));
+    const localStock = Math.max(
+        5,
+        Math.floor(raw.InStock * (((seed % 20) + 5) / 100)),
+    );
     return `${region}: ${localStock} units`;
 }
 
