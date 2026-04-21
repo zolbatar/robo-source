@@ -1,17 +1,17 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import type { Product } from "@/app/products";
+import {useMemo, useState} from "react";
+import type {Product} from "@/app/products";
 import {
     LocalisationKey,
     localisationOptions,
     localisations,
 } from "@/app/localisation";
-import { getFilters } from "@/app/filters";
-import { getSelectionDetail } from "@/app/selection";
-import { paginationControl } from "@/app/pagination";
-import { getProductsList } from "@/app/products-list";
-import { search } from "@/app/search";
+import {getFilters} from "@/app/filters";
+import {getSelectionDetail} from "@/app/selection";
+import {paginationControl} from "@/app/pagination";
+import {getProductsList} from "@/app/products-list";
+import {search} from "@/app/search";
 
 type ProductBrowserProps = {
     products: Product[];
@@ -27,17 +27,17 @@ type ProductBrowserProps = {
 };
 
 export default function ProductBrowser({
-    products,
-    selectedCategory,
-    query,
-    safePage,
-    totalPages,
-    totalProducts,
-    startIndex,
-    endIndex,
-    previousPageHref,
-    nextPageHref,
-}: ProductBrowserProps) {
+                                           products,
+                                           selectedCategory,
+                                           query,
+                                           safePage,
+                                           totalPages,
+                                           totalProducts,
+                                           startIndex,
+                                           endIndex,
+                                           previousPageHref,
+                                           nextPageHref,
+                                       }: ProductBrowserProps) {
     const [selectedProductId, setSelectedProductId] = useState(
         products[0]?.id ?? null,
     );
@@ -77,28 +77,33 @@ export default function ProductBrowser({
         <div className="min-h-screen bg-zinc-50 text-zinc-950 dark:bg-zinc-950 dark:text-zinc-50">
             <main className="mx-auto flex min-h-screen w-full max-w-400 flex-col px-6 py-6 lg:px-8">
                 <section className="mt-6 grid gap-6 xl:grid-cols-[280px_minmax(0,1fr)_320px]">
-                    <aside className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                    <aside
+                        className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                         {search(selectedCategory, query)}
                         <div className="mt-6 flex flex-col gap-2"></div>
-                        {getFilters(selectedCategory)}
+                        {getFilters(selectedCategory, query)}
                     </aside>
 
-                    <section className="min-w-0 rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-                        <div className="flex flex-col gap-4 border-b border-zinc-200 pb-5 dark:border-zinc-800 sm:flex-row sm:items-end sm:justify-between">
+                    <section
+                        className="min-w-0 rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                        <div
+                            className="flex flex-col gap-4 border-b border-zinc-200 pb-5 dark:border-zinc-800 sm:flex-row sm:items-end sm:justify-between">
                             <div>
                                 <div className="text-sm text-zinc-500 dark:text-zinc-400">
-                                    Showing {startIndex + 1}-
-                                    {Math.min(endIndex, totalProducts)} of{" "}
-                                    {totalProducts.toLocaleString()} results
+                                    {totalProducts === 0
+                                        ? "No results found"
+                                        : `Showing ${startIndex + 1}-${Math.min(endIndex, totalProducts)} of ${totalProducts.toLocaleString()} results`}
                                 </div>
                                 <h2 className="mt-1 text-xl font-semibold">
-                                    Recommended for procurement teams in the{" "}
-                                    {localisation.label}
+                                    {selectedCategory
+                                        ? `${selectedCategory} recommended for procurement teams`
+                                        : "Recommended for procurement teams"}
                                 </h2>
                             </div>
 
                             <div className="grid gap-3 sm:grid-cols-3">
-                                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950">
+                                <div
+                                    className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950">
                                     <div className="text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
                                         Price mode
                                     </div>
@@ -106,7 +111,8 @@ export default function ProductBrowser({
                                         Localised
                                     </div>
                                 </div>
-                                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950">
+                                <div
+                                    className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950">
                                     <div className="text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
                                         Sort
                                     </div>
@@ -114,7 +120,8 @@ export default function ProductBrowser({
                                         Availability first
                                     </div>
                                 </div>
-                                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950">
+                                <div
+                                    className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950">
                                     <div className="text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
                                         Page
                                     </div>
@@ -147,7 +154,7 @@ export default function ProductBrowser({
                                     className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50"
                                 >
                                     {localisationOptions.map(
-                                        ({ key, value }) => (
+                                        ({key, value}) => (
                                             <option key={key} value={key}>
                                                 {value.label}
                                             </option>
