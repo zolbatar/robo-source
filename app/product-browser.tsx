@@ -1,6 +1,6 @@
 "use client";
 
-import {useEffect, useMemo, useState} from "react";
+import {useMemo, useState} from "react";
 import type {Product} from "@/app/products";
 import Link from "next/link";
 
@@ -41,10 +41,6 @@ const localisations: Record<LocalisationKey, Localisation> = localisationOptions
     {} as Record<LocalisationKey, Localisation>,
 );
 
-function detectInitialLocalisation(): LocalisationKey {
-    return "UK";
-}
-
 function formatPrice(priceUsd: number, target: Localisation) {
     const converted = priceUsd * target.rateFromUsd;
 
@@ -78,27 +74,25 @@ export default function ProductBrowser({
                                            nextPageHref,
                                        }: ProductBrowserProps) {
     const [selectedProductId, setSelectedProductId] = useState(products[0]?.id ?? null);
-    const [localisationKey, setLocalisationKey] = useState<LocalisationKey>("UK");
+    const [localisationKey, setLocalisationKey] = useState<LocalisationKey>(() => {
+        if (typeof window === "undefined") {
+            return "UK";
+        }
 
-    useEffect(() => {
-        const locale = navigator.language.toLowerCase();
+        const locale = window.navigator.language.toLowerCase();
         const region = locale.split("-")[1]?.toUpperCase();
 
         switch (region) {
             case "GB":
-                setLocalisationKey("UK");
-                break;
+                return "UK";
             case "JP":
-                setLocalisationKey("Japan");
-                break;
+                return "Japan";
             case "US":
-                setLocalisationKey("US");
-                break;
+                return "US";
             default:
-                setLocalisationKey("EU");
-                break;
+                return "EU";
         }
-    }, []);
+    });
 
     const selectedProduct = useMemo(
         () => products.find((product) => product.id === selectedProductId) ?? products[0] ?? null,
