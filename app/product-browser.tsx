@@ -2,16 +2,18 @@
 
 import {useMemo, useState} from "react";
 import type {Product} from "@/app/products";
+import Link from "next/link";
 
 const categories = [
-    "Motors",
-    "Controllers",
-    "Sensors",
-    "Grippers",
+    "Batteries",
     "Cables",
-    "Frames",
     "Cameras",
+    "Controllers",
+    "Frames",
+    "Grippers",
     "Microcontrollers",
+    "Motors",
+    "Sensors",
     "Wheels",
 ];
 
@@ -24,6 +26,7 @@ function formatPrice(price: number, currency: string) {
 
 type ProductBrowserProps = {
     products: Product[];
+    selectedCategory: string | null;
     safePage: number;
     totalPages: number;
     totalProducts: number;
@@ -35,6 +38,7 @@ type ProductBrowserProps = {
 
 export default function ProductBrowser({
                                            products,
+                                           selectedCategory,
                                            safePage,
                                            totalPages,
                                            totalProducts,
@@ -53,51 +57,41 @@ export default function ProductBrowser({
     return (
         <div className="min-h-screen bg-zinc-50 text-zinc-950 dark:bg-zinc-950 dark:text-zinc-50">
             <main className="mx-auto flex min-h-screen w-full max-w-[1600px] flex-col px-6 py-6 lg:px-8">
-                <header
-                    className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-                    <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-                        <div className="space-y-3">
-                            <div
-                                className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium tracking-wide text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300">
-                                RoboSource · Global robotics components finder
-                            </div>
-                            <div className="space-y-2">
-                                <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-                                    Find robotics parts fast, with regional availability and buyer-aware ranking.
-                                </h1>
-                                <p className="max-w-3xl text-sm leading-6 text-zinc-600 dark:text-zinc-400 sm:text-base">
-                                    A composable product listing page for engineering and procurement teams. The
-                                    catalog is stable, while pricing, warehouse availability, and merchandising
-                                    signals can update independently.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </header>
-
                 <section className="mt-6 grid gap-6 xl:grid-cols-[280px_minmax(0,1fr)_320px]">
                     <aside
                         className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                         <div className="flex items-center justify-between">
                             <h2 className="text-lg font-semibold">Filters</h2>
-                            <button
-                                className="text-sm text-zinc-500 transition hover:text-zinc-900 dark:hover:text-zinc-100">
+                            <Link
+                                href="/"
+                                className="text-sm text-zinc-500 transition hover:text-zinc-900 dark:hover:text-zinc-100"
+                            >
                                 Reset
-                            </button>
+                            </Link>
                         </div>
 
                         <div className="mt-6 space-y-6">
                             <div>
                                 <h3 className="text-sm font-medium">Category</h3>
                                 <div className="mt-3 flex flex-wrap gap-2">
-                                    {categories.map((category) => (
-                                        <span
-                                            key={category}
-                                            className="rounded-full border border-zinc-200 px-3 py-1 text-xs text-zinc-700 dark:border-zinc-700 dark:text-zinc-300"
-                                        >
-                {category}
-                </span>
-                                    ))}
+                                    {categories.map((category) => {
+                                        const isActive = selectedCategory === category;
+                                        const href = isActive ? "/" : `/?category=${encodeURIComponent(category)}`;
+
+                                        return (
+                                            <a
+                                                key={category}
+                                                href={href}
+                                                className={`rounded-full border px-3 py-1 text-xs transition ${
+                                                    isActive
+                                                        ? "border-emerald-500 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
+                                                        : "border-zinc-200 text-zinc-700 hover:border-zinc-300 dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-zinc-600"
+                                                }`}
+                                            >
+                                                {category}
+                                            </a>
+                                        );
+                                    })}
                                 </div>
                             </div>
                         </div>
@@ -116,6 +110,7 @@ export default function ProductBrowser({
                                     Recommended for procurement teams in the UK
                                 </h2>
                             </div>
+
                             <div className="grid gap-3 sm:grid-cols-3">
                                 <div
                                     className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950">
@@ -134,12 +129,21 @@ export default function ProductBrowser({
                                 <div
                                     className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950">
                                     <div className="text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-                                        Refresh
+                                        Page
                                     </div>
                                     <div className="mt-1 text-sm font-medium">
-                                        Page {safePage} of {totalPages}
+                                        {safePage} of {totalPages}
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+
+                        <div className="mt-5 flex items-center justify-between gap-3 text-sm">
+                            <div className="text-zinc-500 dark:text-zinc-400">
+                                {selectedCategory ? `Filtered by ${selectedCategory}` : "Showing all categories"}
+                            </div>
+                            <div className="text-zinc-500 dark:text-zinc-400">
+                                {products.length} product{products.length === 1 ? "" : "s"} on this page
                             </div>
                         </div>
 
@@ -162,21 +166,22 @@ export default function ProductBrowser({
                                             className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                                             <div className="min-w-0">
                                                 <div className="flex flex-wrap items-center gap-2">
-                <span
-                    className="rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
-                    {product.category}
-                    </span>
+                          <span
+                              className="rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+                            {product.category}
+                          </span>
                                                     <span
                                                         className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
-                    {product.badge}
-                    </span>
+                            {product.badge}
+                          </span>
                                                     {isSelected ? (
                                                         <span
                                                             className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
-                        Selected
-                        </span>
+                              Selected
+                            </span>
                                                     ) : null}
                                                 </div>
+
                                                 <h3 className="mt-3 text-lg font-semibold tracking-tight">{product.name}</h3>
                                                 <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
                                                     {product.brand} · {product.id}
@@ -223,11 +228,39 @@ export default function ProductBrowser({
                                 );
                             })}
                         </div>
+
+                        <div
+                            className="mt-6 flex items-center justify-between border-t border-zinc-200 pt-5 dark:border-zinc-800">
+                            <div className="text-sm text-zinc-500 dark:text-zinc-400">
+                                Page {safePage} of {totalPages}
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                                {previousPageHref ? (
+                                    <a
+                                        href={previousPageHref}
+                                        className="rounded-2xl border border-zinc-200 px-4 py-2 text-sm font-medium transition hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-950"
+                                    >
+                                        Previous
+                                    </a>
+                                ) : null}
+
+                                {nextPageHref ? (
+                                    <a
+                                        href={nextPageHref}
+                                        className="rounded-2xl border border-zinc-200 px-4 py-2 text-sm font-medium transition hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-950"
+                                    >
+                                        Next
+                                    </a>
+                                ) : null}
+                            </div>
+                        </div>
                     </section>
 
                     <aside
                         className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                         <h2 className="text-lg font-semibold">Selection detail</h2>
+
                         {selectedProduct ? (
                             <>
                                 <div
@@ -256,7 +289,12 @@ export default function ProductBrowser({
                                     </div>
                                 </div>
                             </>
-                        ) : null}
+                        ) : (
+                            <div
+                                className="mt-5 rounded-3xl border border-dashed border-zinc-200 p-4 text-sm text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
+                                No products match the current filter.
+                            </div>
+                        )}
                     </aside>
                 </section>
             </main>
