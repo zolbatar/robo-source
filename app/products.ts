@@ -124,7 +124,7 @@ function generateSpecs(raw: RawProduct): string[] {
             ];
         }
         case "Wheels": {
-            const sizes = ["4 in", "6 in", "8 in"];
+            const sizes = ["10cm", "14cm", "18cm"];
             const materials = ["Polyurethane", "Rubber", "Anti-static"];
             const uses = ["AMR-ready", "Indoor use", "Heavy-duty"];
             return [
