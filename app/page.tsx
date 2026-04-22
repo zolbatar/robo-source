@@ -91,7 +91,7 @@ export default async function Home({ searchParams }: HomeProps) {
             const matchesPreferredWarehouse = regionStock.startsWith(
                 localeConfig[selectedLocale].warehouse,
             )
-                ? 30
+                ? 10
                 : 0;
             const unitsMatch = regionStock.match(/(\d+) units/);
             const units = unitsMatch ? Number(unitsMatch[1]) : 0;

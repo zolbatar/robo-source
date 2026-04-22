@@ -1,6 +1,6 @@
 "use client";
 
-import {useMemo, useState} from "react";
+import {useEffect, useMemo, useState} from "react";
 import type {Product} from "@/app/products";
 import {
     LocalisationKey,
@@ -31,6 +31,53 @@ type ProductBrowserProps = {
     selectedPersonaLabel: string;
 };
 
+function stringSeed(input: string): number {
+    return input.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+}
+
+function getWarehouseForLocale(locale: "US" | "UK" | "EU") {
+    switch (locale) {
+        case "US":
+            return "US warehouse";
+        case "EU":
+            return "EU warehouse";
+        case "UK":
+        default:
+            return "UK warehouse";
+    }
+}
+
+function buildLiveOffer(
+    product: Product,
+    locale: "US" | "UK" | "EU",
+    timeBucket: number,
+): Pick<Product, "regionStock" | "leadTime" | "badge"> {
+    const seed = stringSeed(product.id);
+    const preferredWarehouse = getWarehouseForLocale(locale);
+    const warehouseOptions = [preferredWarehouse, "UK warehouse", "EU warehouse", "US warehouse"];
+    const regionStockBase = Math.max(4, Math.floor(product.stock * (((seed % 18) + 8) / 100)));
+    const stockDrift = ((seed + timeBucket) % 9) - 4;
+    const liveUnits = Math.max(0, regionStockBase + stockDrift);
+    const chosenWarehouse = warehouseOptions[(seed + timeBucket) % warehouseOptions.length];
+
+    const leadTimeDays = Math.max(2, 2 + ((seed + timeBucket) % 7));
+
+    const liveBadge =
+        liveUnits <= 8
+            ? "Low stock"
+            : leadTimeDays <= 3
+                ? "Short lead time"
+                : chosenWarehouse === preferredWarehouse
+                    ? `Popular in ${locale}`
+                    : product.badge;
+
+    return {
+        regionStock: `${chosenWarehouse}: ${liveUnits} units`,
+        leadTime: `${leadTimeDays} days`,
+        badge: liveBadge,
+    };
+}
+
 export default function ProductBrowser({
                                            products,
                                            selectedCategory,
@@ -50,6 +97,7 @@ export default function ProductBrowser({
     const [selectedProductId, setSelectedProductId] = useState(
         products[0]?.id ?? null,
     );
+    const [liveProducts, setLiveProducts] = useState<Product[]>(products);
     const [localisationKey, setLocalisationKey] = useState<LocalisationKey>(
         () => {
             switch (selectedLocale) {
@@ -64,12 +112,30 @@ export default function ProductBrowser({
         },
     );
 
+    useEffect(() => {
+        const applyLiveOffers = () => {
+            const timeBucket = Math.floor(Date.now() / 30000);
+
+            setLiveProducts(
+                products.map((product) => ({
+                    ...product,
+                    ...buildLiveOffer(product, selectedLocale, timeBucket),
+                })),
+            );
+        };
+
+        applyLiveOffers();
+        const intervalId = window.setInterval(applyLiveOffers, 30000);
+
+        return () => window.clearInterval(intervalId);
+    }, [products, selectedLocale]);
+
     const selectedProduct = useMemo(
         () =>
-            products.find((product) => product.id === selectedProductId) ??
-            products[0] ??
+            liveProducts.find((product) => product.id === selectedProductId) ??
+            liveProducts[0] ??
             null,
-        [products, selectedProductId],
+        [liveProducts, selectedProductId],
     );
 
     const localisation = localisations[localisationKey];
@@ -116,7 +182,7 @@ export default function ProductBrowser({
                                         Price mode
                                     </div>
                                     <div className="mt-1 text-sm font-medium">
-                                        Localised
+                                        Localised + live offers
                                     </div>
                                 </div>
                                 <div
@@ -125,7 +191,7 @@ export default function ProductBrowser({
                                         Sort
                                     </div>
                                     <div className="mt-1 text-sm font-medium">
-                                        Availability first
+                                        Persona + availability
                                     </div>
                                 </div>
                                 <div
@@ -182,8 +248,12 @@ export default function ProductBrowser({
                             totalPages,
                         )}
 
+                        <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-950 dark:bg-emerald-950/40 dark:text-emerald-300">
+                            Live commercial offers refresh every 10 seconds.
+                        </div>
+
                         {getProductsList(
-                            products,
+                            liveProducts,
                             selectedProduct,
                             setSelectedProductId,
                             localisationKey,
