@@ -4,31 +4,42 @@ import ProductBrowser from "@/app/product-browser";
 // Pagination
 const PAGE_SIZE = 24;
 
+
 type HomeProps = {
     searchParams?: Promise<{
-        page?: string;
-        q?: string;
-        category?: string;
-        locale?: string;
-        persona?: string;
+        page?: string | string[];
+        q?: string | string[];
+        category?: string | string[];
+        locale?: string | string[];
+        persona?: string | string[];
     }>;
 };
 
+function getSingleParam(
+    value: string | string[] | undefined,
+): string | undefined {
+    if (Array.isArray(value)) {
+        return value[0];
+    }
+
+    return value;
+}
+
 export default async function Home({ searchParams }: HomeProps) {
     const params = (await searchParams) ?? {};
-    const query = (params.q ?? "").trim().toLowerCase();
-    const parsedPage = Number(params.page ?? "1");
+    const query = (getSingleParam(params.q) ?? "").trim().toLowerCase();
+    const parsedPage = Number(getSingleParam(params.page) ?? "1");
     const currentPage =
         Number.isFinite(parsedPage) && parsedPage > 0
             ? Math.floor(parsedPage)
             : 1;
-    const selectedCategory = params.category?.trim() || null;
+    const selectedCategory = (getSingleParam(params.category) ?? "").trim() || null;
 
     const supportedLocales = ["US", "UK", "EU"] as const;
     const supportedPersonas = ["engineer", "procurement", "field"] as const;
 
-    const localeParam = (params.locale ?? "UK").trim().toUpperCase();
-    const personaParam = (params.persona ?? "procurement").trim().toLowerCase();
+    const localeParam = (getSingleParam(params.locale) ?? "UK").trim().toUpperCase();
+    const personaParam = (getSingleParam(params.persona) ?? "procurement").trim().toLowerCase();
 
     const selectedLocale = supportedLocales.includes(
         localeParam as (typeof supportedLocales)[number],
@@ -83,134 +94,119 @@ export default async function Home({ searchParams }: HomeProps) {
         return matchesCategory && matchesQuery;
     });
 
-    const rankedProducts = [...filteredProducts].sort((a, b) => {
-        const localeA = enrichProduct(a);
-        const localeB = enrichProduct(b);
+    const enrichedProducts = filteredProducts.map((product) => ({
+        raw: product,
+        enriched: enrichProduct(product),
+    }));
 
-        const stockScore = (regionStock: string) => {
-            const matchesPreferredWarehouse = regionStock.startsWith(
-                localeConfig[selectedLocale].warehouse,
+    const stockScore = (regionStock: string) => {
+        const matchesPreferredWarehouse = regionStock.startsWith(
+            localeConfig[selectedLocale].warehouse,
+        )
+            ? 10
+            : 0;
+        const unitsMatch = regionStock.match(/(\d+) units/);
+        const units = unitsMatch ? Number(unitsMatch[1]) : 0;
+        return matchesPreferredWarehouse + units;
+    };
+
+    const leadTimeScore = (leadTime: string) => {
+        const days = Number.parseInt(leadTime, 10);
+        return Number.isFinite(days) ? Math.max(0, 14 - days) : 0;
+    };
+
+    const specScore = (specs: string[]) => {
+        switch (selectedPersona) {
+            case "engineer":
+                return specs.some((spec) =>
+                    [
+                        "CANopen",
+                        "EtherCAT",
+                        "Modbus",
+                        "ROS 2",
+                        "GigE",
+                        "Global shutter",
+                    ].includes(spec),
+                )
+                    ? 25
+                    : 0;
+            case "field":
+                return specs.some((spec) =>
+                    [
+                        "Shielded",
+                        "Drag-chain rated",
+                        "IP67",
+                        "Factory-rated",
+                        "Heavy-duty",
+                    ].includes(spec),
+                )
+                    ? 20
+                    : 0;
+            case "procurement":
+            default:
+                return 0;
+        }
+    };
+
+    const priceScore = (price: number) => {
+        if (selectedPersona === "procurement") {
+            return Math.max(0, 600 - price);
+        }
+        return 0;
+    };
+
+    const badgeScore = (badge: string) => {
+        if (
+            selectedPersona === "procurement" &&
+            ["Low stock", "Short lead time", "Popular in UK", "Popular in EU"].includes(
+                badge,
             )
-                ? 10
-                : 0;
-            const unitsMatch = regionStock.match(/(\d+) units/);
-            const units = unitsMatch ? Number(unitsMatch[1]) : 0;
-            return matchesPreferredWarehouse + units;
-        };
+        ) {
+            return 20;
+        }
+        if (
+            selectedPersona === "engineer" &&
+            ["High torque", "Vision pipeline", "Embedded control"].includes(badge)
+        ) {
+            return 20;
+        }
+        if (
+            selectedPersona === "field" &&
+            ["Field-service ready", "Factory-ready", "Heavy-duty"].includes(badge)
+        ) {
+            return 20;
+        }
+        return 0;
+    };
 
-        const leadTimeScore = (leadTime: string) => {
-            const days = Number.parseInt(leadTime, 10);
-            return Number.isFinite(days) ? Math.max(0, 14 - days) : 0;
-        };
+    const scoredProducts = enrichedProducts.map(({ raw, enriched }) => ({
+        raw,
+        enriched,
+        score:
+            stockScore(enriched.regionStock) +
+            leadTimeScore(enriched.leadTime) +
+            specScore(enriched.specs) +
+            priceScore(raw.Price) +
+            badgeScore(enriched.badge),
+    }));
 
-        const specScore = (specs: string[]) => {
-            switch (selectedPersona) {
-                case "engineer":
-                    return specs.some((spec) =>
-                        [
-                            "CANopen",
-                            "EtherCAT",
-                            "Modbus",
-                            "ROS 2",
-                            "GigE",
-                            "Global shutter",
-                        ].includes(spec),
-                    )
-                        ? 25
-                        : 0;
-                case "field":
-                    return specs.some((spec) =>
-                        [
-                            "Shielded",
-                            "Drag-chain rated",
-                            "IP67",
-                            "Factory-rated",
-                            "Heavy-duty",
-                        ].includes(spec),
-                    )
-                        ? 20
-                        : 0;
-                case "procurement":
-                default:
-                    return 0;
-            }
-        };
-
-        const priceScore = (price: number) => {
-            if (selectedPersona === "procurement") {
-                return Math.max(0, 600 - price);
-            }
-            return 0;
-        };
-
-        const badgeScore = (badge: string) => {
-            if (
-                selectedPersona === "procurement" &&
-                [
-                    "Low stock",
-                    "Short lead time",
-                    "Popular in UK",
-                    "Popular in EU",
-                ].includes(badge)
-            ) {
-                return 20;
-            }
-            if (
-                selectedPersona === "engineer" &&
-                ["High torque", "Vision pipeline", "Embedded control"].includes(
-                    badge,
-                )
-            ) {
-                return 20;
-            }
-            if (
-                selectedPersona === "field" &&
-                ["Field-service ready", "Factory-ready", "Heavy-duty"].includes(
-                    badge,
-                )
-            ) {
-                return 20;
-            }
-            return 0;
-        };
-
-        const scoreA =
-            stockScore(localeA.regionStock) +
-            leadTimeScore(localeA.leadTime) +
-            specScore(localeA.specs) +
-            priceScore(a.Price) +
-            badgeScore(localeA.badge);
-
-        const scoreB =
-            stockScore(localeB.regionStock) +
-            leadTimeScore(localeB.leadTime) +
-            specScore(localeB.specs) +
-            priceScore(b.Price) +
-            badgeScore(localeB.badge);
-
-        return scoreB - scoreA;
-    });
+    const rankedProducts = scoredProducts.sort((a, b) => b.score - a.score);
 
     const totalProducts = rankedProducts.length;
     const totalPages = Math.max(1, Math.ceil(totalProducts / PAGE_SIZE));
     const safePage = Math.min(currentPage, totalPages);
     const startIndex = (safePage - 1) * PAGE_SIZE;
     const endIndex = startIndex + PAGE_SIZE;
-    const products = rankedProducts
-        .slice(startIndex, endIndex)
-        .map((product) => {
-            const enriched = enrichProduct(product);
-            const localizedPrice =
-                Math.round(
-                    product.Price * localeConfig[selectedLocale].rate * 100,
-                ) / 100;
+    const products = rankedProducts.slice(startIndex, endIndex).map(({ raw, enriched }) => {
+        const localizedPrice =
+            Math.round(raw.Price * localeConfig[selectedLocale].rate * 100) / 100;
 
-            return {
-                ...enriched,
-                basePrice: localizedPrice,
-                currency: localeConfig[selectedLocale].currency,
-            };
-        });
+        return {
+            ...enriched,
+            basePrice: localizedPrice,
+            currency: localeConfig[selectedLocale].currency,
+        };
+    });
 
     const buildPageHref = (page: number) => {
         const next = new URLSearchParams();
