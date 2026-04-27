@@ -3,6 +3,7 @@
 import {useEffect, useMemo, useState} from "react";
 import type {Product} from "@/app/products";
 import {
+    localeConfig,
     LocalisationKey,
     localisationOptions,
     localisations,
@@ -25,8 +26,7 @@ type ProductBrowserProps = {
     endIndex: number;
     previousPageHref: string | null;
     nextPageHref: string | null;
-    selectedLocale: "US" | "UK" | "EU";
-    selectedLocaleLabel: string;
+    selectedLocale: LocalisationKey;
     selectedPersona: "engineer" | "procurement" | "field";
     selectedPersonaLabel: string;
 };
@@ -35,21 +35,27 @@ function stringSeed(input: string): number {
     return input.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
 }
 
-function getWarehouseForLocale(locale: "US" | "UK" | "EU") {
+function getWarehouseForLocale(locale: LocalisationKey) {
     switch (locale) {
         case "US":
             return "US warehouse";
         case "EU":
             return "EU warehouse";
+        case "Japan":
+            return "Japan warehouse";
         case "UK":
         default:
             return "UK warehouse";
     }
 }
 
+function isLocalisationKey(value: string): value is LocalisationKey {
+    return value in localisations;
+}
+
 function buildLiveOffer(
     product: Product,
-    locale: "US" | "UK" | "EU",
+    locale: LocalisationKey,
     timeBucket: number,
 ): Pick<Product, "regionStock" | "leadTime" | "badge"> {
     const seed = stringSeed(product.id);
@@ -90,7 +96,6 @@ export default function ProductBrowser({
                                            previousPageHref,
                                            nextPageHref,
                                            selectedLocale,
-                                           selectedLocaleLabel,
                                            selectedPersona,
                                            selectedPersonaLabel,
                                        }: ProductBrowserProps) {
@@ -98,19 +103,7 @@ export default function ProductBrowser({
         products[0]?.id ?? null,
     );
     const [liveProducts, setLiveProducts] = useState<Product[]>(products);
-    const [localisationKey, setLocalisationKey] = useState<LocalisationKey>(
-        () => {
-            switch (selectedLocale) {
-                case "US":
-                    return "US";
-                case "EU":
-                    return "EU";
-                case "UK":
-                default:
-                    return "UK";
-            }
-        },
-    );
+    const [localisationKey, setLocalisationKey] = useState<LocalisationKey>(selectedLocale);
 
     useEffect(() => {
         const applyLiveOffers = () => {
@@ -119,7 +112,7 @@ export default function ProductBrowser({
             setLiveProducts(
                 products.map((product) => ({
                     ...product,
-                    ...buildLiveOffer(product, selectedLocale, timeBucket),
+                    ...buildLiveOffer(product, localisationKey, timeBucket),
                 })),
             );
         };
@@ -128,7 +121,7 @@ export default function ProductBrowser({
         const intervalId = window.setInterval(applyLiveOffers, 30000);
 
         return () => window.clearInterval(intervalId);
-    }, [products, selectedLocale]);
+    }, [products, localisationKey]);
 
     const selectedProduct = useMemo(
         () =>
@@ -143,7 +136,7 @@ export default function ProductBrowser({
     return (
         <div className="min-h-screen bg-zinc-50 text-zinc-950 dark:bg-zinc-950 dark:text-zinc-50">
             {false && <div className="flex justify-center">
-                {selectPersona(selectedPersona, query, selectedCategory, selectedLocale)}
+                {selectPersona(selectedPersona, query, selectedCategory, localisationKey)}
             </div>}
 
             <main className="mx-auto flex min-h-screen w-full max-w-400 flex-col px-6 py-6 lg:px-8">
@@ -170,8 +163,8 @@ export default function ProductBrowser({
                                 </div>
                                 <h2 className="mt-1 text-xl font-semibold">
                                     {selectedCategory
-                                        ? `${selectedCategory} recommended for ${selectedPersonaLabel.toLowerCase()} teams in ${selectedLocale}`
-                                        : `Recommended for ${selectedPersonaLabel.toLowerCase()} teams in ${selectedLocale}`}
+                                        ? `${selectedCategory} recommended for ${selectedPersonaLabel.toLowerCase()} teams in ${localisationKey}`
+                                        : `Recommended for ${selectedPersonaLabel.toLowerCase()} teams in ${localisationKey}`}
                                 </h2>
                             </div>
 
@@ -200,7 +193,7 @@ export default function ProductBrowser({
                                         Locale / persona
                                     </div>
                                     <div className="mt-1 text-sm font-medium">
-                                        {selectedLocale} · {selectedPersonaLabel}
+                                        {localisationKey} · {selectedPersonaLabel}
                                     </div>
                                 </div>
                             </div>
@@ -215,16 +208,17 @@ export default function ProductBrowser({
 
                             <label className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400">
                                 <span className="whitespace-nowrap">
-                                    {selectedLocaleLabel}
+                                    {localeConfig[localisationKey].currency}
                                 </span>
                                 <select
                                     value={localisationKey}
-                                    onChange={(event) =>
-                                        setLocalisationKey(
-                                            event.target
-                                                .value as LocalisationKey,
-                                        )
-                                    }
+                                    onChange={(event) => {
+                                        const nextLocale = event.currentTarget.value;
+
+                                        if (isLocalisationKey(nextLocale)) {
+                                            setLocalisationKey(nextLocale);
+                                        }
+                                    }}
                                     className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 opacity-60 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50"
                                 >
                                     {localisationOptions.map(
@@ -248,8 +242,9 @@ export default function ProductBrowser({
                             totalPages,
                         )}
 
-                        <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-950 dark:bg-emerald-950/40 dark:text-emerald-300">
-                            Live commercial offers refresh every 10 seconds.
+                        <div
+                            className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-950 dark:bg-emerald-950/40 dark:text-emerald-300">
+                            Live commercial offers refresh every few seconds.
                         </div>
 
                         {getProductsList(

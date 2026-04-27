@@ -1,5 +1,6 @@
-import { allProducts, enrichProduct } from "@/app/products";
+import {allProducts, enrichProduct} from "@/app/products";
 import ProductBrowser from "@/app/product-browser";
+import {localeConfig, LocalisationKey} from "@/app/localisation";
 
 // Pagination
 const PAGE_SIZE = 24;
@@ -25,7 +26,9 @@ function getSingleParam(
     return value;
 }
 
-export default async function Home({ searchParams }: HomeProps) {
+export default async function Home({searchParams}: HomeProps) {
+
+    // Get parameters passed in with the URL
     const params = (await searchParams) ?? {};
     const query = (getSingleParam(params.q) ?? "").trim().toLowerCase();
     const parsedPage = Number(getSingleParam(params.page) ?? "1");
@@ -35,17 +38,21 @@ export default async function Home({ searchParams }: HomeProps) {
             : 1;
     const selectedCategory = (getSingleParam(params.category) ?? "").trim() || null;
 
-    const supportedLocales = ["US", "UK", "EU"] as const;
+    const supportedLocales = Object.keys(localeConfig) as LocalisationKey[];
     const supportedPersonas = ["engineer", "procurement", "field"] as const;
 
     const localeParam = (getSingleParam(params.locale) ?? "UK").trim().toUpperCase();
+    console.log(params)
     const personaParam = (getSingleParam(params.persona) ?? "procurement").trim().toLowerCase();
 
-    const selectedLocale = supportedLocales.includes(
+    console.log(localeParam)
+    const selectedLocale =
+        supportedLocales.includes(
         localeParam as (typeof supportedLocales)[number],
     )
         ? (localeParam as (typeof supportedLocales)[number])
         : "UK";
+    console.log(selectedLocale)
 
     const selectedPersona = supportedPersonas.includes(
         personaParam as (typeof supportedPersonas)[number],
@@ -53,26 +60,6 @@ export default async function Home({ searchParams }: HomeProps) {
         ? (personaParam as (typeof supportedPersonas)[number])
         : "procurement";
 
-    const localeConfig = {
-        US: {
-            currency: "USD",
-            rate: 1,
-            label: "United States · USD",
-            warehouse: "US warehouse",
-        },
-        UK: {
-            currency: "GBP",
-            rate: 0.79,
-            label: "United Kingdom · GBP",
-            warehouse: "UK warehouse",
-        },
-        EU: {
-            currency: "EUR",
-            rate: 0.92,
-            label: "European Union · EUR",
-            warehouse: "EU warehouse",
-        },
-    } as const;
 
     const personaLabels = {
         engineer: "Engineer",
@@ -179,7 +166,7 @@ export default async function Home({ searchParams }: HomeProps) {
         return 0;
     };
 
-    const scoredProducts = enrichedProducts.map(({ raw, enriched }) => ({
+    const scoredProducts = enrichedProducts.map(({raw, enriched}) => ({
         raw,
         enriched,
         score:
@@ -197,7 +184,7 @@ export default async function Home({ searchParams }: HomeProps) {
     const safePage = Math.min(currentPage, totalPages);
     const startIndex = (safePage - 1) * PAGE_SIZE;
     const endIndex = startIndex + PAGE_SIZE;
-    const products = rankedProducts.slice(startIndex, endIndex).map(({ raw, enriched }) => {
+    const products = rankedProducts.slice(startIndex, endIndex).map(({raw, enriched}) => {
         const localizedPrice =
             Math.round(raw.Price * localeConfig[selectedLocale].rate * 100) / 100;
 
@@ -237,7 +224,6 @@ export default async function Home({ searchParams }: HomeProps) {
             previousPageHref={previousPageHref}
             nextPageHref={nextPageHref}
             selectedLocale={selectedLocale}
-            selectedLocaleLabel={localeConfig[selectedLocale].label}
             selectedPersona={selectedPersona}
             selectedPersonaLabel={personaLabels[selectedPersona]}
         />

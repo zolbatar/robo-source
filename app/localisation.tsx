@@ -57,3 +57,36 @@ export const localisations: Record<LocalisationKey, Localisation> =
         },
         {} as Record<LocalisationKey, Localisation>,
     );
+
+const warehouseByKey: Record<LocalisationKey, string> = {
+    US: "US warehouse",
+    UK: "UK warehouse",
+    EU: "EU warehouse",
+    Japan: "Japan warehouse",
+};
+
+export const localeConfig: Record<
+    LocalisationKey,
+    {
+        currency: Localisation["currency"];
+        rate: number;
+        label: string;
+        warehouse: string;
+    }
+> = (Object.keys(localisations) as LocalisationKey[]).reduce((acc, key) => {
+    const loc = localisations[key];
+
+    acc[key] = {
+        currency: loc.currency,
+        rate: loc.rateFromUsd,
+        label: `${loc.label} · ${loc.currency}`,
+        warehouse: warehouseByKey[key],
+    };
+
+    return acc;
+}, {} as Record<LocalisationKey, {
+    currency: Localisation["currency"];
+    rate: number;
+    label: string;
+    warehouse: string;
+}>);
